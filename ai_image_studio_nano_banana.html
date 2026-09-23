@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nano Banana AI Image Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        banana: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            900: '#713f12',
+                        },
+                        darkbg: '#0f1117',
+                        cardbg: '#181b24',
+                        borderbg: '#272b38'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1117;
+            color: #f3f4f6;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181b24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #181b24 0%, #272b38 50%, #181b24 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased">
+
+    <header class="border-b border-borderbg bg-cardbg/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-banana-500/10 text-banana-400 rounded-xl border border-banana-500/20">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                        Nano Banana <span class="text-xs bg-banana-500/20 text-banana-400 font-semibold px-2 py-0.5 rounded-full border border-banana-500/30">v3.1 Image</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Powered by Gemini API</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="clearGalleryBtn" class="text-gray-400 hover:text-white px-3 py-1.5 rounded-lg border border-borderbg text-xs flex items-center gap-1.5 transition">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear Gallery
+                </button>
+                <a href="https://ai.google.dev" target="_blank" class="hidden sm:flex items-center gap-1 text-xs text-banana-400 hover:underline">
+                    Docs <i data-lucide="external-link" class="w-3 h-3"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Generation Card -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-sm uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        <i data-lucide="wand-2" class="w-4 h-4 text-banana-400"></i> Studio Prompt
+                    </h2>
+                    <span class="text-xs text-banana-400 bg-banana-500/10 px-2.5 py-1 rounded-full font-medium">Nano Banana Studio</span>
+                </div>
+
+                <!-- Prompt Input Box -->
+                <div class="space-y-3">
+                    <div class="relative">
+                        <textarea id="promptInput" rows="4" 
+                            class="w-full bg-darkbg border border-borderbg focus:border-banana-500 focus:ring-1 focus:ring-banana-500 rounded-xl p-3.5 text-sm text-gray-100 placeholder-gray-500 resize-none outline-none transition"
+                            placeholder="Describe what you want to create... (e.g. 'A vibrant cyberpunk coffee shop in rainy Tokyo with neon signs reflected on wet pavement, high resolution 3D render')"></textarea>
+                        <button id="enhancePromptBtn" title="Enhance prompt details" class="absolute bottom-3 right-3 p-1.5 bg-cardbg hover:bg-borderbg text-gray-400 hover:text-banana-400 rounded-lg text-xs flex items-center gap-1 border border-borderbg transition">
+                            <i data-lucide="zap" class="w-3.5 h-3.5"></i> Enhance
+                        </button>
+                    </div>
+
+                    <!-- Suggestions Chips -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+                        <span class="text-gray-500 whitespace-nowrap">Try:</span>
+                        <button class="prompt-chip bg-darkbg hover:bg-borderbg border border-borderbg text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition">🎨 Cyberpunk Street</button>
+                        <button class="prompt-chip bg-darkbg hover:bg-borderbg border border-borderbg text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition">🐱 Astronaut Cat</button>
+                        <button class="prompt-chip bg-darkbg hover:bg-borderbg border border-borderbg text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition">🏞 Studio Ghibli Forest</button>
+                        <button class="prompt-chip bg-darkbg hover:bg-borderbg border border-borderbg text-gray-300 px-2.5 py-1 rounded-full whitespace-nowrap transition">🍔 Isometric Food Art</button>
+                    </div>
+                </div>
+
+                <!-- Style / Preset Selector -->
+                <div class="mt-5 space-y-2">
+                    <label class="text-xs font-medium text-gray-400 block">Style Preset</label>
+                    <div class="grid grid-cols-3 gap-2" id="stylePresets">
+                        <button data-style="" class="style-btn active border-banana-500 bg-banana-500/10 text-banana-400 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            None
+                        </button>
+                        <button data-style=", photorealistic, 8k resolution, cinematic lighting, photorealistic DSLR photo" class="style-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            📸 Photo
+                        </button>
+                        <button data-style=", 3D digital art, Octane Render, highly detailed 3D illustration" class="style-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            🎮 3D Render
+                        </button>
+                        <button data-style=", anime aesthetic, vibrant colors, detailed manga illustration" class="style-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            ✨ Anime
+                        </button>
+                        <button data-style=", oil painting style, expressive brushstrokes, masterpiece canvas" class="style-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            🖼 Oil Paint
+                        </button>
+                        <button data-style=", retro synthwave 80s aesthetic, neon glow, retrofuturism" class="style-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl p-2 text-xs text-center font-medium transition">
+                            🌆 Synthwave
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Aspect Ratio Selector -->
+                <div class="mt-5 space-y-2">
+                    <label class="text-xs font-medium text-gray-400 block">Aspect Ratio</label>
+                    <div class="grid grid-cols-5 gap-2" id="aspectRatios">
+                        <button data-ratio="1:1" class="ratio-btn active border-banana-500 bg-banana-500/10 text-banana-400 border rounded-xl py-2 text-xs text-center font-medium transition">
+                            1:1
+                        </button>
+                        <button data-ratio="16:9" class="ratio-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl py-2 text-xs text-center font-medium transition">
+                            16:9
+                        </button>
+                        <button data-ratio="9:16" class="ratio-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl py-2 text-xs text-center font-medium transition">
+                            9:16
+                        </button>
+                        <button data-ratio="4:3" class="ratio-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl py-2 text-xs text-center font-medium transition">
+                            4:3
+                        </button>
+                        <button data-ratio="3:4" class="ratio-btn border-borderbg bg-darkbg hover:border-gray-600 text-gray-300 border rounded-xl py-2 text-xs text-center font-medium transition">
+                            3:4
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model Picker Selection -->
+                <div class="mt-5 space-y-2">
+                    <label class="text-xs font-medium text-gray-400 block">Model Engine</label>
+                    <select id="modelSelect" class="w-full bg-darkbg border border-borderbg rounded-xl px-3 py-2 text-xs text-gray-200 outline-none focus:border-banana-500">
+                        <option value="gemini-3.1-flash-image">Gemini 3.1 Flash Image (Nano Banana 2 - High Fidelity)</option>
+                        <option value="gemini-3.1-flash-lite-image">Gemini 3.1 Flash Lite Image (Fast Drafts)</option>
+                    </select>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="mt-6">
+                    <button id="generateBtn" class="w-full bg-gradient-to-r from-banana-500 to-banana-600 hover:from-banana-400 hover:to-banana-500 text-darkbg font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-banana-500/10 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
+                        <i data-lucide="sparkles" class="w-5 h-5 fill-current"></i>
+                        <span>Generate Image</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image Editing / Iteration Target Info -->
+            <div id="iterationContextBar" class="hidden bg-cardbg border border-banana-500/30 rounded-xl p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <img id="refineThumb" src="" class="w-10 h-10 object-cover rounded-lg border border-borderbg flex-shrink-0">
+                    <div class="truncate">
+                        <p class="text-xs text-banana-400 font-semibold">Refining Previous Image</p>
+                        <p class="text-xs text-gray-400 truncate" id="refinePromptText"></p>
+                    </div>
+                </div>
+                <button id="cancelRefineBtn" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Recent Prompts History -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-4">
+                <h3 class="font-semibold text-xs uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4"></i> Prompt History
+                </h3>
+                <div id="historyList" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 italic">No history yet. Generated prompts will appear here.</p>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Current Display / Loading Canvas -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-4 min-h-[420px] flex flex-col justify-center items-center relative overflow-hidden group">
+                
+                <!-- Idle State -->
+                <div id="idleState" class="text-center p-8">
+                    <div class="w-20 h-20 bg-darkbg border border-borderbg rounded-full flex items-center justify-center mx-auto mb-4 text-banana-400">
+                        <i data-lucide="image" class="w-10 h-10 stroke-[1.5]"></i>
+                    </div>
+                    <h3 class="font-semibold text-gray-200 text-base">Your Canvas is Ready</h3>
+                    <p class="text-xs text-gray-400 max-w-sm mt-1">Enter a prompt on the left and click <span class="text-banana-400 font-medium">Generate Image</span> to bring your imagination to life.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden text-center p-8 flex-col items-center justify-center space-y-4">
+                    <div class="relative w-24 h-24">
+                        <div class="absolute inset-0 rounded-full border-4 border-banana-500/20 border-t-banana-500 animate-spin"></div>
+                        <div class="absolute inset-2 rounded-full border-4 border-borderbg border-b-banana-400 animate-spin" style="animation-direction: reverse; animation-duration: 2s;"></div>
+                        <div class="absolute inset-0 flex items-center justify-center text-banana-400">
+                            <i data-lucide="wand-2" class="w-8 h-8 animate-bounce"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-200">Nano Banana at work...</h4>
+                        <p class="text-xs text-gray-400 mt-1" id="loadingSubtitle">Rendering textures, lighting, and detail</p>
+                    </div>
+                </div>
+
+                <!-- Active Preview State -->
+                <div id="previewState" class="hidden w-full flex flex-col items-center">
+                    <div class="relative max-w-full max-h-[500px] rounded-xl overflow-hidden shadow-2xl border border-borderbg">
+                        <img id="mainPreviewImg" src="" alt="Generated artwork" class="max-h-[500px] w-auto object-contain rounded-xl">
+                        
+                        <!-- Overlay Action Toolbar -->
+                        <div class="absolute bottom-3 right-3 flex items-center gap-2 bg-darkbg/80 backdrop-blur-md p-1.5 rounded-xl border border-borderbg shadow-lg">
+                            <button id="viewFullBtn" title="View Fullscreen" class="p-2 hover:bg-borderbg text-gray-300 hover:text-white rounded-lg transition">
+                                <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                            </button>
+                            <button id="downloadMainBtn" title="Download Image" class="p-2 hover:bg-borderbg text-banana-400 rounded-lg transition">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                            </button>
+                            <button id="refineMainBtn" title="Refine / Edit this image" class="p-2 hover:bg-borderbg text-gray-300 hover:text-banana-400 rounded-lg transition">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 w-full bg-darkbg p-3 rounded-xl border border-borderbg flex justify-between items-center text-xs text-gray-400">
+                        <p id="mainPromptLabel" class="truncate pr-4 font-mono text-gray-300"></p>
+                        <span id="mainMetaBadge" class="bg-cardbg px-2 py-1 rounded border border-borderbg font-mono shrink-0">1:1</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Gallery Grid Section -->
+            <div class="bg-cardbg border border-borderbg rounded-2xl p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        <i data-lucide="grid" class="w-4 h-4 text-banana-400"></i> Generated Gallery (<span id="galleryCount">0</span>)
+                    </h3>
+                </div>
+
+                <!-- Gallery Empty -->
+                <div id="galleryEmpty" class="text-center py-12 border border-dashed border-borderbg rounded-xl">
+                    <i data-lucide="images" class="w-8 h-8 text-gray-600 mx-auto mb-2"></i>
+                    <p class="text-xs text-gray-500">Your generated images will be saved here during this session.</p>
+                </div>
+
+                <!-- Gallery Items Container -->
+                <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 hidden">
+                    <!-- Dynamic Gallery Cards appended here -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal for Fullscreen View -->
+    <div id="imageModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <button id="closeModalBtn" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-white bg-cardbg rounded-full border border-borderbg">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <div class="max-w-4xl w-full max-h-[90vh] flex flex-col items-center">
+            <img id="modalImg" src="" class="max-h-[80vh] max-w-full object-contain rounded-xl shadow-2xl">
+            <p id="modalCaption" class="mt-4 text-xs text-gray-300 text-center font-mono max-w-xl bg-cardbg p-3 rounded-xl border border-borderbg w-full"></p>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-cardbg border border-banana-500/40 text-gray-100 text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-banana-400"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        // State variables
+        let selectedStyle = "";
+        let selectedAspectRatio = "1:1";
+        let galleryItems = [];
+        let promptHistory = [];
+        let currentImageResult = null; // Store latest generated object
+        let refineSourceImage = null; // Store base image data if editing multi-turn
+
+        // DOM Element references
+        const promptInput = document.getElementById('promptInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const enhancePromptBtn = document.getElementById('enhancePromptBtn');
+        const stylePresets = document.getElementById('stylePresets');
+        const aspectRatios = document.getElementById('aspectRatios');
+        const modelSelect = document.getElementById('modelSelect');
+        const idleState = document.getElementById('idleState');
+        const loadingState = document.getElementById('loadingState');
+        const previewState = document.getElementById('previewState');
+        const mainPreviewImg = document.getElementById('mainPreviewImg');
+        const mainPromptLabel = document.getElementById('mainPromptLabel');
+        const mainMetaBadge = document.getElementById('mainMetaBadge');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const galleryEmpty = document.getElementById('galleryEmpty');
+        const galleryCount = document.getElementById('galleryCount');
+        const historyList = document.getElementById('historyList');
+        const clearGalleryBtn = document.getElementById('clearGalleryBtn');
+        const downloadMainBtn = document.getElementById('downloadMainBtn');
+        const viewFullBtn = document.getElementById('viewFullBtn');
+        const refineMainBtn = document.getElementById('refineMainBtn');
+        const imageModal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const iterationContextBar = document.getElementById('iterationContextBar');
+        const refineThumb = document.getElementById('refineThumb');
+        const refinePromptText = document.getElementById('refinePromptText');
+        const cancelRefineBtn = document.getElementById('cancelRefineBtn');
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Style selection handler
+        stylePresets.addEventListener('click', (e) => {
+            const btn = e.target.closest('.style-btn');
+            if (!btn) return;
+            document.querySelectorAll('.style-btn').forEach(b => {
+                b.classList.remove('active', 'border-banana-500', 'bg-banana-500/10', 'text-banana-400');
+                b.classList.add('border-borderbg', 'bg-darkbg', 'text-gray-300');
+            });
+            btn.classList.add('active', 'border-banana-500', 'bg-banana-500/10', 'text-banana-400');
+            btn.classList.remove('border-borderbg', 'bg-darkbg', 'text-gray-300');
+            selectedStyle = btn.dataset.style;
+        });
+
+        // Aspect ratio selection handler
+        aspectRatios.addEventListener('click', (e) => {
+            const btn = e.target.closest('.ratio-btn');
+            if (!btn) return;
+            document.querySelectorAll('.ratio-btn').forEach(b => {
+                b.classList.remove('active', 'border-banana-500', 'bg-banana-500/10', 'text-banana-400');
+                b.classList.add('border-borderbg', 'bg-darkbg', 'text-gray-300');
+            });
+            btn.classList.add('active', 'border-banana-500', 'bg-banana-500/10', 'text-banana-400');
+            btn.classList.remove('border-borderbg', 'bg-darkbg', 'text-gray-300');
+            selectedAspectRatio = btn.dataset.ratio;
+        });
+
+        // Prompt Chips click
+        document.querySelectorAll('.prompt-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                promptInput.value = chip.textContent.replace(/^[^\s]+\s/, ''); // Remove emoji prefix
+            });
+        });
+
+        // Enhance Prompt Button
+        enhancePromptBtn.addEventListener('click', () => {
+            if (!promptInput.value.trim()) {
+                showToast("Please enter a basic prompt first!");
+                return;
+            }
+            const modifiers = [
+                "cinematic lighting", "highly detailed texture", "trending on artstation",
+                "masterpiece composition", "8k resolution", "soft ambient occlusion"
+            ];
+            const randomAdditions = modifiers.sort(() => 0.5 - Math.random()).slice(0, 3).join(", ");
+            promptInput.value = `${promptInput.value.trim()}, ${randomAdditions}`;
+            showToast("Added prompt enhancements!");
+        });
+
+        // Generate Image Execution Function
+        async function generateImage() {
+            const rawPrompt = promptInput.value.trim();
+            if (!rawPrompt) {
+                showToast("Please type a prompt before generating!");
+                return;
+            }
+
+            const fullPrompt = rawPrompt + selectedStyle;
+            const modelName = modelSelect.value;
+            
+            // Set Loading UI State
+            setLoading(true);
+
+            try {
+                const apiKey = ""; // API key resolved dynamically by runtime environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+                let payload = {};
+
+                // Check if performing multi-turn refinement or fresh generation
+                if (refineSourceImage) {
+                    payload = {
+                        contents: [{
+                            role: "user",
+                            parts: [
+                                { text: fullPrompt },
+                                {
+                                    inlineData: {
+                                        mimeType: refineSourceImage.mimeType || "image/png",
+                                        data: refineSourceImage.base64
+                                    }
+                                }
+                            ]
+                        }],
+                        generationConfig: {
+                            responseModalities: ['TEXT', 'IMAGE'],
+                            imageConfig: { aspectRatio: selectedAspectRatio }
+                        }
+                    };
+                } else {
+                    payload = {
+                        contents: [{
+                            role: 'user',
+                            parts: [{ text: fullPrompt }]
+                        }],
+                        generationConfig: {
+                            responseModalities: ['IMAGE'],
+                            imageConfig: { aspectRatio: selectedAspectRatio }
+                        }
+                    };
+                }
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || `HTTP ${response.status} error`);
+                }
+
+                const result = await response.json();
+                
+                // Extract image inlineData from candidate response
+                const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+                if (!part || !part.inlineData?.data) {
+                    throw new Error("No image data returned from model API.");
+                }
+
+                const mimeType = part.inlineData.mimeType || "image/png";
+                const base64Data = part.inlineData.data;
+                const dataUrl = `data:${mimeType};base64,${base64Data}`;
+
+                const newItem = {
+                    id: Date.now(),
+                    url: dataUrl,
+                    base64: base64Data,
+                    mimeType: mimeType,
+                    prompt: rawPrompt,
+                    fullPrompt: fullPrompt,
+                    ratio: selectedAspectRatio,
+                    model: modelName,
+                    timestamp: new Date().toLocaleTimeString()
+                };
+
+                // Update current main preview
+                currentImageResult = newItem;
+                displayMainPreview(newItem);
+
+                // Add to gallery
+                galleryItems.unshift(newItem);
+                updateGalleryUI();
+
+                // Add to prompt history
+                addHistory(rawPrompt);
+
+                // Clear refinement mode if present
+                cancelRefinement();
+
+                showToast("Image generated successfully!");
+
+            } catch (err) {
+                console.error("Image generation error:", err);
+                showToast(`Generation failed: ${err.message || 'Error communicating with Gemini'}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                generateBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                idleState.classList.add('hidden');
+                previewState.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                loadingState.classList.add('flex');
+            } else {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                loadingState.classList.add('hidden');
+                loadingState.classList.remove('flex');
+            }
+        }
+
+        function displayMainPreview(item) {
+            idleState.classList.add('hidden');
+            loadingState.classList.add('hidden');
+            previewState.classList.remove('hidden');
+
+            mainPreviewImg.src = item.url;
+            mainPromptLabel.textContent = item.prompt;
+            mainMetaBadge.textContent = `${item.ratio} | ${item.model.includes('lite') ? 'Lite' : 'Flash'}`;
+        }
+
+        function updateGalleryUI() {
+            galleryCount.textContent = galleryItems.length;
+
+            if (galleryItems.length === 0) {
+                galleryEmpty.classList.remove('hidden');
+                galleryGrid.classList.add('hidden');
+                return;
+            }
+
+            galleryEmpty.classList.add('hidden');
+            galleryGrid.classList.remove('hidden');
+            galleryGrid.innerHTML = '';
+
+            galleryItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "group relative rounded-xl overflow-hidden border border-borderbg bg-darkbg aspect-square cursor-pointer transition transform hover:scale-[1.02] hover:border-banana-500/50";
+                card.innerHTML = `
+                    <img src="${item.url}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition p-2.5 flex flex-col justify-end">
+                        <p class="text-[10px] text-gray-200 line-clamp-2 mb-2 font-mono">${item.prompt}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] bg-banana-500/20 text-banana-400 border border-banana-500/30 px-1.5 py-0.5 rounded font-mono">${item.ratio}</span>
+                            <div class="flex gap-1">
+                                <button onclick="downloadImage('${item.url}', 'nano-banana-${item.id}.png'); event.stopPropagation();" class="p-1 bg-cardbg hover:bg-borderbg text-banana-400 rounded">
+                                    <i data-lucide="download" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    currentImageResult = item;
+                    displayMainPreview(item);
+                });
+                galleryGrid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function addHistory(promptStr) {
+            if (promptHistory.includes(promptStr)) return;
+            promptHistory.unshift(promptStr);
+            if (promptHistory.length > 5) promptHistory.pop();
+
+            historyList.innerHTML = '';
+            promptHistory.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "text-xs text-gray-300 hover:text-banana-400 bg-darkbg hover:bg-borderbg border border-borderbg p-2 rounded-lg cursor-pointer truncate transition flex items-center justify-between group";
+                item.innerHTML = `
+                    <span class="truncate pr-2">${p}</span>
+                    <i data-lucide="arrow-up-left" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition shrink-0"></i>
+                `;
+                item.addEventListener('click', () => {
+                    promptInput.value = p;
+                });
+                historyList.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function downloadImage(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'generated-image.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            showToast("Download started!");
+        }
+
+        downloadMainBtn.addEventListener('click', () => {
+            if (currentImageResult) {
+                downloadImage(currentImageResult.url, `nano-banana-${currentImageResult.id}.png`);
+            }
+        });
+
+        viewFullBtn.addEventListener('click', () => {
+            if (currentImageResult) {
+                modalImg.src = currentImageResult.url;
+                modalCaption.textContent = `"${currentImageResult.prompt}" (${currentImageResult.ratio})`;
+                imageModal.classList.remove('hidden');
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            imageModal.classList.add('hidden');
+        });
+
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) imageModal.classList.add('hidden');
+        });
+
+        // Multi-turn Refinement triggering
+        refineMainBtn.addEventListener('click', () => {
+            if (!currentImageResult) return;
+            refineSourceImage = currentImageResult;
+            refineThumb.src = currentImageResult.url;
+            refinePromptText.textContent = currentImageResult.prompt;
+            iterationContextBar.classList.remove('hidden');
+            promptInput.placeholder = "Describe changes to make to this image (e.g. 'Add a cute cat in the foreground')...";
+            promptInput.focus();
+            showToast("Refinement mode active! Enter adjustments in prompt.");
+        });
+
+        function cancelRefinement() {
+            refineSourceImage = null;
+            iterationContextBar.classList.add('hidden');
+            promptInput.placeholder = "Describe what you want to create...";
+        }
+
+        cancelRefineBtn.addEventListener('click', cancelRefinement);
+
+        clearGalleryBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to clear all images in gallery?")) {
+                galleryItems = [];
+                currentImageResult = null;
+                updateGalleryUI();
+                previewState.classList.add('hidden');
+                idleState.classList.remove('hidden');
+                showToast("Gallery cleared");
+            }
+        });
+
+        // Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Attach Generate Click
+        generateBtn.addEventListener('click', generateImage);
+
+    </script>
+</body>
+</html>
